@@ -9,7 +9,6 @@
 #define _NET_WM_STATE_ADD           1    /* add/set property */
 #define _NET_WM_STATE_TOGGLE        2    /* toggle property  */
 
-
 Display *display;
 unsigned char *prop;
 unsigned long window;
@@ -128,36 +127,29 @@ int main(int argc, char** argv){
 
         //if the window exists...
         if(winstreq(windows[i], target_name)){
-            puts("window exists");
+            //puts("window exists");
 
             //and is the focused window...
             if(windows[i] == focused_window){
-                puts("and is focused");
+                //puts("and is focused");
 
                 //minimize it
-                //XUnmapWindow(display, focused_window);
-                //XLowerWindow(display, focused_window);
-
                 Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
-                Atom prop2 = XInternAtom(display, "", False);
-                client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, (unsigned long)prop2, 0, 0);
+                client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, 0, 0, 0);
 
                 goto exit;
             } else {
-                puts("and is not focused");
+                //puts("and is not focused");
 
                 //focus it
-                //XMapWindow(display, windows[i]);
                 XMapRaised(display, windows[i]);
-                //XRaiseWindow(display, windows[i]);
-                //XSetInputFocus(display, windows[i], RevertToParent, CurrentTime);
                 goto exit;
             }
         }
     }
 
     //if we got here, the window doesn't exist, so start it
-    puts("window not found, starting thing");
+    //puts("window not found, starting thing");
     system(start_cmd);
 
 exit:
