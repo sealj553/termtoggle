@@ -5,6 +5,10 @@
 #include <string.h>
 
 #define MAXSTR 1000
+#define _NET_WM_STATE_REMOVE        0    /* remove/unset property */
+#define _NET_WM_STATE_ADD           1    /* add/set property */
+#define _NET_WM_STATE_TOGGLE        2    /* toggle property  */
+
 
 Display *display;
 unsigned char *prop;
@@ -12,37 +16,6 @@ unsigned long window;
 
 const char *target_name = "dropdown";
 const char *start_cmd   = "st -t dropdown &";
-
-/*
-unsigned char* get_string_property(char* property_name){
-    Atom actual_type;
-    int actual_format;
-    unsigned long nitems, bytes_after;
-
-    Atom filter_atom = XInternAtom(display, property_name, True);
-    int status = XGetWindowProperty(display, window, filter_atom, 0, MAXSTR, False, AnyPropertyType, &actual_type, &actual_format, &nitems, &bytes_after, &prop);
-
-    if(status == BadWindow){
-        printf("window id # 0x%lx does not exists!", window);
-        exit(1);
-    }
-
-    if(status != Success){
-        printf("XGetWindowProperty failed!");
-        exit(2);
-    }
-    return prop;
-}
-
-unsigned long get_current_window_prop(void){
-    int screen = XDefaultScreen(display);
-    window = RootWindow(display, screen);
-    get_string_property("_NET_ACTIVE_WINDOW");
-    unsigned long long_property = prop[0] + (prop[1]<<8) + (prop[2]<<16) + (prop[3]<<24);
-    window = long_property;
-    return window;
-}
-*/
 
 static char *get_property(Display *disp, Window win, Atom xa_prop_type, char *prop_name, unsigned long *size){
     Atom xa_prop_name, xa_ret_type;
@@ -95,7 +68,7 @@ Window *winlist(unsigned long *len){
     return (Window*)list;
 }
 
-int window_name_is(Window win, const char *name){
+int winstreq(Window win, const char *name){
     char *net_wm_name;
     if(!(net_wm_name = get_property(display, win, XInternAtom(display, "UTF8_STRING", False), "_NET_WM_NAME", NULL))){
         return 0;
@@ -110,21 +83,34 @@ int window_name_is(Window win, const char *name){
     }
 }
 
-//int window_name_is_2(Window win, const char *name){
-//    char *net_wm_name;
-//
-//    if(!(net_wm_name = get_property(display, win, XA_STRING, "_NET_WM_NAME", NULL))){
-//        return 0;
-//    }
-//
-//    if(strcmp(net_wm_name, name) == 0){
-//        free(net_wm_name);
-//        return 1;
-//    } else {
-//        free(net_wm_name);
-//        return 0;
-//    }
-//}
+static int client_msg(Display *disp, Window win, char *msg, /* {{{ */
+        unsigned long data0, unsigned long data1, 
+        unsigned long data2, unsigned long data3,
+        unsigned long data4) {
+    XEvent event;
+    long mask = SubstructureRedirectMask | SubstructureNotifyMask;
+
+    event.xclient.type = ClientMessage;
+    event.xclient.serial = 0;
+    event.xclient.send_event = True;
+    event.xclient.message_type = XInternAtom(disp, msg, False);
+    event.xclient.window = win;
+    event.xclient.format = 32;
+    event.xclient.data.l[0] = data0;
+    event.xclient.data.l[1] = data1;
+    event.xclient.data.l[2] = data2;
+    event.xclient.data.l[3] = data3;
+    event.xclient.data.l[4] = data4;
+    
+    if (XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)) {
+        return EXIT_SUCCESS;
+    }
+    else {
+        fprintf(stderr, "Cannot send %s event.\n", msg);
+        return EXIT_FAILURE;
+    }
+}
+
 
 int main(int argc, char** argv){
     display = XOpenDisplay(NULL);
@@ -141,19 +127,30 @@ int main(int argc, char** argv){
     for(unsigned long i = 0; i < num_windows; ++i){
 
         //if the window exists...
-        if(window_name_is(windows[i], target_name)){
+        if(winstreq(windows[i], target_name)){
             puts("window exists");
 
             //and is the focused window...
-            if(focused_window == windows[i]){
+            if(windows[i] == focused_window){
                 puts("and is focused");
 
                 //minimize it
+                //XUnmapWindow(display, focused_window);
+                //XLowerWindow(display, focused_window);
+
+                Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
+                Atom prop2 = XInternAtom(display, "", False);
+                client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, (unsigned long)prop2, 0, 0);
+
                 goto exit;
             } else {
                 puts("and is not focused");
 
                 //focus it
+                //XMapWindow(display, windows[i]);
+                XMapRaised(display, windows[i]);
+                //XRaiseWindow(display, windows[i]);
+                //XSetInputFocus(display, windows[i], RevertToParent, CurrentTime);
                 goto exit;
             }
         }
@@ -161,7 +158,7 @@ int main(int argc, char** argv){
 
     //if we got here, the window doesn't exist, so start it
     puts("window not found, starting thing");
-    //system(start_cmd);
+    system(start_cmd);
 
 exit:
     XCloseDisplay(display);
