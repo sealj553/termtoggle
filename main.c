@@ -24,8 +24,6 @@ static char *get_property(Display *disp, Window win, Atom xa_prop_type, char *pr
 
     xa_prop_name = XInternAtom(disp, prop_name, False);
 
-    //MAX_PROPERTY_VALUE_LEN / 4 explanation (XGetWindowProperty manpage):
-    //long_length = Specifies the length in 32-bit multiples of the data to be retrieved.
     if (XGetWindowProperty(disp, win, xa_prop_name, 0, MAXSTR/ 4, False,
                 xa_prop_type, &xa_ret_type, &ret_format,     
                 &ret_nitems, &ret_bytes_after, &ret_prop) != Success) {
