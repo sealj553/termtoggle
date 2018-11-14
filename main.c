@@ -80,7 +80,7 @@ int winstreq(Window win, const char *name){
     }
 }
 
-static int client_msg(Display *disp, Window win, char *msg, /* {{{ */
+static int client_msg(Display *disp, Window win, char *msg,
         unsigned long data0, unsigned long data1, 
         unsigned long data2, unsigned long data3,
         unsigned long data4) {
@@ -101,8 +101,7 @@ static int client_msg(Display *disp, Window win, char *msg, /* {{{ */
     
     if (XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)) {
         return EXIT_SUCCESS;
-    }
-    else {
+    } else {
         fprintf(stderr, "Cannot send %s event.\n", msg);
         return EXIT_FAILURE;
     }
