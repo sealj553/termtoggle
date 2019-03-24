@@ -81,25 +81,27 @@ static int client_msg(Display *disp, Window win, char *msg,
     XEvent event;
     long mask = SubstructureRedirectMask | SubstructureNotifyMask;
 
-    event.xclient.type = ClientMessage;
-    event.xclient.serial = 0;
-    event.xclient.send_event = True;
-    event.xclient.message_type = XInternAtom(disp, msg, False);
-    event.xclient.window = win;
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = data0;
-    event.xclient.data.l[1] = data1;
-    event.xclient.data.l[2] = data2;
-    event.xclient.data.l[3] = data3;
-    event.xclient.data.l[4] = data4;
+    event.xclient.type          = ClientMessage;
+    event.xclient.serial        = 0;
+    event.xclient.send_event    = True;
+    event.xclient.message_type  = XInternAtom(disp, msg, False);
+    event.xclient.window        = win;
+    event.xclient.format        = 32;
+    event.xclient.data.l[0]     = data0;
+    event.xclient.data.l[1]     = data1;
+    event.xclient.data.l[2]     = data2;
+    event.xclient.data.l[3]     = data3;
+    event.xclient.data.l[4]     = data4;
 
-    if (XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)) {
+    if(XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)){
         return EXIT_SUCCESS;
     } else {
         fprintf(stderr, "Cannot send %s event.\n", msg);
         return EXIT_FAILURE;
     }
 }
+
+int error_handler(Display *disp, XErrorEvent *err){ return 0; }
 
 int main(int argc, char** argv){
     display = XOpenDisplay(NULL);
@@ -113,20 +115,20 @@ int main(int argc, char** argv){
     Window *windows = winlist(&num_windows);
     for(unsigned long i = 0; i < num_windows; ++i){
         //if the window exists...
-        if(winstreq(windows[i], target_name)){
-            //and is the focused window...
-            if(windows[i] == focused_window){
-                //minimize it
-                Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
-                client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, 0, 0, 0);
-                goto exit;
-            } else {
-                //raise and focus it
-                XMapRaised(display, windows[i]);
-                XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
-                goto exit;
-            }
+        if(!winstreq(windows[i], target_name)) continue;
+
+        //and is the focused window...
+        if(windows[i] == focused_window){
+            //minimize it
+            Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
+            client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, 0, 0, 0);
+        } else {
+            //raise and focus it
+            XMapRaised(display, windows[i]);
+            XSetErrorHandler(error_handler); //prevents BadMatch when window is already focused
+            XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
         }
+        goto exit;
     }
 
     //if we got here, the window doesn't exist, so start it
