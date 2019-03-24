@@ -16,7 +16,7 @@ unsigned long window;
 const char *target_name = "dropdown";
 const char *start_cmd   = "st -t dropdown &";
 
-static char *get_property(Display *disp, Window win, Atom xa_prop_type, char *prop_name, unsigned long *size){
+static char* get_property(Display *disp, Window win, Atom xa_prop_type, char *prop_name, unsigned long *size){
     Atom xa_prop_name, xa_ret_type;
     int ret_format;
     unsigned long ret_nitems, ret_bytes_after;
@@ -24,14 +24,14 @@ static char *get_property(Display *disp, Window win, Atom xa_prop_type, char *pr
 
     xa_prop_name = XInternAtom(disp, prop_name, False);
 
-    if (XGetWindowProperty(disp, win, xa_prop_name, 0, MAXSTR/ 4, False,
+    if(XGetWindowProperty(disp, win, xa_prop_name, 0, MAXSTR/ 4, False,
                 xa_prop_type, &xa_ret_type, &ret_format,     
-                &ret_nitems, &ret_bytes_after, &ret_prop) != Success) {
+                &ret_nitems, &ret_bytes_after, &ret_prop) != Success){
         fprintf(stderr, "Cannot get %s property.\n", prop_name);
         return NULL;
     }
 
-    if (xa_ret_type != xa_prop_type) {
+    if(xa_ret_type != xa_prop_type){
         fprintf(stderr, "Invalid type of %s property.\n", prop_name);
         XFree(ret_prop);
         return NULL;
@@ -43,21 +43,19 @@ static char *get_property(Display *disp, Window win, Atom xa_prop_type, char *pr
     memcpy(ret, ret_prop, tmp_size);
     ret[tmp_size] = '\0';
 
-    if (size) {
-        *size = tmp_size;
-    }
+    if(size){ *size = tmp_size; }
 
     XFree(ret_prop);
     return ret;
 }
 
-Window *winlist(unsigned long *len){
-    Atom prop = XInternAtom(display,"_NET_CLIENT_LIST", False), type;
+Window* winlist(unsigned long *len){
+    Atom type, prop = XInternAtom(display,"_NET_CLIENT_LIST", False);
     int form;
     unsigned long remain;
     unsigned char *list;
 
-    if(XGetWindowProperty(display,XDefaultRootWindow(display),prop,0,1024,False,XA_WINDOW,&type,&form,len,&remain,&list) != Success){
+    if(XGetWindowProperty(display, XDefaultRootWindow(display), prop, 0, 1024, False, XA_WINDOW, &type, &form, len, &remain, &list) != Success){
         perror("winlist() -- GetWinProp");
         return 0;
     }
@@ -71,13 +69,9 @@ int winstreq(Window win, const char *name){
         return 0;
     }
 
-    if(strcmp(net_wm_name, name) == 0){
-        free(net_wm_name);
-        return 1;
-    } else {
-        free(net_wm_name);
-        return 0;
-    }
+    int retval = !strcmp(net_wm_name, name);
+    free(net_wm_name);
+    return retval;
 }
 
 static int client_msg(Display *disp, Window win, char *msg,
@@ -98,7 +92,7 @@ static int client_msg(Display *disp, Window win, char *msg,
     event.xclient.data.l[2] = data2;
     event.xclient.data.l[3] = data3;
     event.xclient.data.l[4] = data4;
-    
+
     if (XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)) {
         return EXIT_SUCCESS;
     } else {
@@ -107,12 +101,9 @@ static int client_msg(Display *disp, Window win, char *msg,
     }
 }
 
-
 int main(int argc, char** argv){
     display = XOpenDisplay(NULL);
-    if(display == NULL){
-        fprintf (stderr, "%s:  unable to open display '%s'\n", argv[0], XDisplayName(NULL));
-    }
+    if(!display){ fprintf(stderr, "%s:  unable to open display '%s'\n", argv[0], XDisplayName(NULL)); }
 
     Window focused_window;
     int revert;
@@ -121,32 +112,24 @@ int main(int argc, char** argv){
     unsigned long num_windows;
     Window *windows = winlist(&num_windows);
     for(unsigned long i = 0; i < num_windows; ++i){
-
         //if the window exists...
         if(winstreq(windows[i], target_name)){
-            //puts("window exists");
-
             //and is the focused window...
             if(windows[i] == focused_window){
-                //puts("and is focused");
-
                 //minimize it
                 Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
                 client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, 0, 0, 0);
-
                 goto exit;
             } else {
-                //puts("and is not focused");
-
-                //focus it
+                //raise and focus it
                 XMapRaised(display, windows[i]);
+                XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
                 goto exit;
             }
         }
     }
 
     //if we got here, the window doesn't exist, so start it
-    //puts("window not found, starting thing");
     system(start_cmd);
 
 exit:
