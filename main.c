@@ -5,9 +5,6 @@
 #include <string.h>
 
 #define MAXSTR 1000
-#define _NET_WM_STATE_REMOVE        0    /* remove/unset property */
-#define _NET_WM_STATE_ADD           1    /* add/set property */
-#define _NET_WM_STATE_TOGGLE        2    /* toggle property  */
 
 Display *display;
 unsigned char *prop;
@@ -107,6 +104,8 @@ int main(int argc, char** argv){
     display = XOpenDisplay(NULL);
     if(!display){ fprintf(stderr, "%s:  unable to open display '%s'\n", argv[0], XDisplayName(NULL)); }
 
+    XSetErrorHandler(error_handler); //prevents BadMatch when window is already focused
+
     Window focused_window;
     int revert;
     XGetInputFocus(display, &focused_window, &revert);
@@ -120,12 +119,10 @@ int main(int argc, char** argv){
         //and is the focused window...
         if(windows[i] == focused_window){
             //minimize it
-            Atom prop1 = XInternAtom(display, "_NET_WM_STATE_HIDDEN", False);
-            client_msg(display, focused_window, "_NET_WM_STATE", _NET_WM_STATE_ADD, (unsigned long)prop1, 0, 0, 0);
+            XIconifyWindow(display, windows[i], 0);
         } else {
             //raise and focus it
             XMapRaised(display, windows[i]);
-            XSetErrorHandler(error_handler); //prevents BadMatch when window is already focused
             XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
         }
         goto exit;
