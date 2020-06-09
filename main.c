@@ -95,13 +95,16 @@ int main(int argc, char** argv){
             XIconifyWindow(display, windows[i], 0);
         } else {
             //raise and focus it
-            XMapRaised(display, windows[i]);
-            XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
-
-            /*
-                install this on gnome:
-                https://github.com/JasonLG1979/gnome-shell-extension-skip-window-ready-notification/
-            */
+            XClientMessageEvent ev;
+            memset (&ev, 0, sizeof(ev));
+            ev.type = ClientMessage;
+            ev.window = windows[i];
+            ev.message_type = XInternAtom(display, "_NET_ACTIVE_WINDOW", True);
+            ev.format = 32;
+            ev.data.l[0] = 1;
+            ev.data.l[1] = CurrentTime;
+            ev.data.l[2] = ev.data.l[3] = ev.data.l[4] = 0;
+            XSendEvent(display, RootWindow(display, XDefaultScreen(display)), False, SubstructureRedirectMask |SubstructureNotifyMask, (XEvent*)&ev);
         }
         goto exit;
     }
@@ -110,6 +113,9 @@ int main(int argc, char** argv){
     system(start_cmd);
 
 exit:
+    XFlush(display);
+    XSync(display, 0);
     XCloseDisplay(display);
+
     return 0;
 }
