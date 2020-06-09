@@ -124,6 +124,11 @@ int main(int argc, char** argv){
             //raise and focus it
             XMapRaised(display, windows[i]);
             XSetInputFocus(display, windows[i], RevertToNone, CurrentTime);
+
+            /*
+                install this on gnome:
+                https://github.com/JasonLG1979/gnome-shell-extension-skip-window-ready-notification/
+            */
         }
         goto exit;
     }
