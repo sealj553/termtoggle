@@ -71,33 +71,6 @@ int winstreq(Window win, const char *name){
     return retval;
 }
 
-static int client_msg(Display *disp, Window win, char *msg,
-        unsigned long data0, unsigned long data1, 
-        unsigned long data2, unsigned long data3,
-        unsigned long data4) {
-    XEvent event;
-    long mask = SubstructureRedirectMask | SubstructureNotifyMask;
-
-    event.xclient.type          = ClientMessage;
-    event.xclient.serial        = 0;
-    event.xclient.send_event    = True;
-    event.xclient.message_type  = XInternAtom(disp, msg, False);
-    event.xclient.window        = win;
-    event.xclient.format        = 32;
-    event.xclient.data.l[0]     = data0;
-    event.xclient.data.l[1]     = data1;
-    event.xclient.data.l[2]     = data2;
-    event.xclient.data.l[3]     = data3;
-    event.xclient.data.l[4]     = data4;
-
-    if(XSendEvent(disp, DefaultRootWindow(disp), False, mask, &event)){
-        return EXIT_SUCCESS;
-    } else {
-        fprintf(stderr, "Cannot send %s event.\n", msg);
-        return EXIT_FAILURE;
-    }
-}
-
 int error_handler(Display *disp, XErrorEvent *err){ return 0; }
 
 int main(int argc, char** argv){

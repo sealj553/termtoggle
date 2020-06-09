@@ -1,7 +1,7 @@
 CC       = gcc
 LDFLAGS  = -lX11
 INCLUDE  = 
-CFLAGS   = -std=c11 -Wall -Wextra -Wfatal-errors -O2 -Wno-unused-parameter
+CFLAGS   = -std=c11 -Wall -Wextra -Wfatal-errors -O3 -Wno-unused-parameter -Wno-unused-result
 CFLAGS  += $(INCLUDE)
 TARGET   = termtoggle
 SRCFILES = main.c
